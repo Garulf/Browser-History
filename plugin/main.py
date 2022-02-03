@@ -15,7 +15,7 @@ class BrowserHistory(Flox):
     def __init__(self):
         super().__init__()
         self.default_browser = self.settings.get('default_browser')
-        self.browser = browsers.browser(self.default_browser.lower())
+        self.browser = browsers.get(self.default_browser.lower())
 
     def _query(self, query):
         try:

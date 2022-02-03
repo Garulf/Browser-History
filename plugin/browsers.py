@@ -14,7 +14,7 @@ CHROME_DIR = Path(LOCAL_DATA, 'Google', 'Chrome', 'User Data', 'Default', 'Histo
 FIREFOX_DIR = Path(ROAMING, 'Mozilla', 'Firefox', 'Profiles')
 
 
-def browser(browser_name):
+def get(browser_name):
     if browser_name == 'chrome':
         return Chrome()
     elif browser_name == 'firefox':
