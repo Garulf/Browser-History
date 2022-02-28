@@ -7,3 +7,4 @@ body:
       options:
         - Chrome
         - Firefox
+        - Edge

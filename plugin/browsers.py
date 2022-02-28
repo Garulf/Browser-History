@@ -12,13 +12,15 @@ LOCAL_DATA = os.getenv('LOCALAPPDATA')
 ROAMING = os.getenv('APPDATA')
 CHROME_DIR = Path(LOCAL_DATA, 'Google', 'Chrome', 'User Data', 'Default', 'History')
 FIREFOX_DIR = Path(ROAMING, 'Mozilla', 'Firefox', 'Profiles')
-
+EDGE_DIR = Path(LOCAL_DATA, 'Microsoft', 'Edge', 'User Data', 'Default', 'History')
 
 def get(browser_name):
     if browser_name == 'chrome':
         return Chrome()
     elif browser_name == 'firefox':
         return Firefox()
+    elif browser_name == 'edge':
+        return Edge()
     else:
         raise ValueError('Invalid browser name')
 
@@ -93,6 +95,19 @@ class Firefox(Base):
         recents = self.query_history(self.database_path, 'SELECT url, title, visit_date FROM moz_places INNER JOIN moz_historyvisits on moz_historyvisits.place_id = moz_places.id ORDER BY visit_date DESC', limit)
         return self.get_history_items(recents)
 
+class Edge(Base):
+    """Microsoft Edge History"""
+
+    def __init__(self, database_path=EDGE_DIR):
+        self.database_path = database_path
+
+    def history(self, limit=10):
+        """
+        Returns a list of the most recently visited sites in Chrome's history.
+        """
+        recents = self.query_history(self.database_path, 'SELECT url, title, last_visit_time FROM urls ORDER BY last_visit_time DESC', limit)
+        return self.get_history_items(recents)
+
 class HistoryItem(object):
     """Representation of a history item"""
 
@@ -112,3 +127,5 @@ class HistoryItem(object):
             return datetime((self.last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime')
         elif isinstance(self.browser, (Firefox)):
             return datetime.fromtimestamp(self.last_visit_time / 1000000.0)
+        elif isinstance(self.browser, (Edge)):
+            return datetime((self.last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime')
