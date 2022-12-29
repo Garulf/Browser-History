@@ -1,6 +1,6 @@
 from flox import Flox, ICON_HISTORY, ICON_BROWSER
 
-import browsers
+from browsers import BROWSERS
 
 HISTORY_GLYPH = ''
 DEFAULT_BROWSER = 'chrome'
@@ -15,9 +15,8 @@ class BrowserHistory(Flox):
 
     def __init__(self):
         super().__init__()
-        self.default_browser = self.settings.get('default_browser', DEFAULT_BROWSER)
-        self.browser = browsers.get(self.default_browser.lower())
-
+        self.default_browser = self.settings.get('default_browser', DEFAULT_BROWSER).lower()
+        self.browser = BROWSERS[self.default_browser]
     def _query(self, query):
         try:
             self.query(query)
@@ -30,7 +29,7 @@ class BrowserHistory(Flox):
             return self._results
 
     def query(self, query):
-        history = self.browser.history(limit=10000)
+        history = self.browser.get_history(limit=10000)
         for idx, item in enumerate(history):
             if query.lower() in item.title.lower() or query.lower() in item.url.lower():
                 subtitle = f"{idx}. {item.url}"
