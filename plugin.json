@@ -4,7 +4,7 @@
   "Name": "Browser History",
   "Description": "Search your Web Browser history",
   "Author": "Garulf",
-  "Version": "0.2.0",
+  "Version": "0.3.0",
   "Language": "python",
   "Website": "https://github.com/Garulf/browser-history",
   "IcoPath": "./icon.png",
