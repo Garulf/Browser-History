@@ -56,10 +56,13 @@ class Base(object):
         temp_path = self._copy_database(database_path)
 
         # Open the database.
-        with sqlite3.connect(temp_path) as connection:
-            cursor = connection.cursor()
-            cursor.execute(f'{query} LIMIT {limit}')
-            return cursor.fetchall()
+        connection = sqlite3.connect(temp_path)
+        
+        cursor = connection.cursor()
+        cursor.execute(f'{query} LIMIT {limit}')
+        recent = cursor.fetchall()
+        connection.close()
+        return recent
 
     def get_history_items(self, results):
         """
