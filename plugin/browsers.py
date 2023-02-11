@@ -14,6 +14,7 @@ CHROME_DIR = Path(LOCAL_DATA, 'Google', 'Chrome', 'User Data', 'Default', 'Histo
 FIREFOX_DIR = Path(ROAMING, 'Mozilla', 'Firefox', 'Profiles')
 EDGE_DIR = Path(LOCAL_DATA, 'Microsoft', 'Edge', 'User Data', 'Default', 'History')
 BRAVE_DIR = Path(LOCAL_DATA, 'BraveSoftware', 'Brave-Browser', 'User Data', 'Default', 'History')
+OPERA_DIR = Path(ROAMING, 'Opera Software', 'Opera Stable', 'History')
 
 def get(browser_name):
     if browser_name == 'chrome':
@@ -24,6 +25,8 @@ def get(browser_name):
         return Edge()
     elif browser_name == 'brave':
         return Brave()
+    elif browser_name == 'opera':
+        return Opera()
     else:
         raise ValueError('Invalid browser name')
 
@@ -126,6 +129,19 @@ class Brave(Base):
         """
         recents = self.query_history(self.database_path, 'SELECT url, title, last_visit_time FROM urls ORDER BY last_visit_time DESC', limit)
         return self.get_history_items(recents)
+        
+class Opera(Base):
+    """Opera Browser History"""
+
+    def __init__(self, database_path=OPERA_DIR):
+        self.database_path = database_path
+
+    def history(self, limit=10):
+        """
+        Returns a list of the most recently visited sites in Opera's history.
+        """
+        recents = self.query_history(self.database_path, 'SELECT url, title, last_visit_time FROM urls ORDER BY last_visit_time DESC', limit)
+        return self.get_history_items(recents)
 
 
 class HistoryItem(object):
@@ -150,4 +166,6 @@ class HistoryItem(object):
         elif isinstance(self.browser, (Edge)):
             return datetime((self.last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime')
         elif isinstance(self.browser, (Brave)):
+            return datetime((self.last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime')
+        elif isinstance(self.browser, (Opera)):
             return datetime((self.last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime')
