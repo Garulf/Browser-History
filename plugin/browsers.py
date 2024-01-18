@@ -14,7 +14,7 @@ CHROME_DIR = Path(LOCAL_DATA, 'Google', 'Chrome', 'User Data', 'Default', 'Histo
 FIREFOX_DIR = Path(ROAMING, 'Mozilla', 'Firefox', 'Profiles')
 EDGE_DIR = Path(LOCAL_DATA, 'Microsoft', 'Edge', 'User Data', 'Default', 'History')
 BRAVE_DIR = Path(LOCAL_DATA, 'BraveSoftware', 'Brave-Browser', 'User Data', 'Default', 'History')
-OPERA_DIR = Path(ROAMING, 'Opera Software', 'Opera Stable', 'History')
+OPERA_DIR = Path(ROAMING, 'Opera Software', 'Opera Stable', 'Default', 'History')
 VIVALDI_DIR = Path(LOCAL_DATA, 'Vivaldi', 'User Data', 'Default', 'History')
 
 def get(browser_name):
