@@ -14,7 +14,7 @@ CHROME_DIR = Path(LOCAL_DATA, 'Google', 'Chrome', 'User Data', 'Default', 'Histo
 FIREFOX_DIR = Path(ROAMING, 'Mozilla', 'Firefox', 'Profiles')
 EDGE_DIR = Path(LOCAL_DATA, 'Microsoft', 'Edge', 'User Data', 'Default', 'History')
 BRAVE_DIR = Path(LOCAL_DATA, 'BraveSoftware', 'Brave-Browser', 'User Data', 'Default', 'History')
-OPERA_DIR = Path(ROAMING, 'Opera Software', 'Opera Stable', 'History')
+OPERA_DIR = Path(ROAMING, 'Opera Software', 'Opera Stable', 'Default', 'History')
 VIVALDI_DIR = Path(LOCAL_DATA, 'Vivaldi', 'User Data', 'Default', 'History')
 ARC_DIR = Path(LOCAL_DATA, 'Packages', 'TheBrowserCompany.Arc_ttt1ap7aakyb4', 'LocalCache', 'Local', 'Arc', 'User Data', 'Default', 'History')
 
@@ -201,6 +201,4 @@ class HistoryItem(object):
         elif isinstance(self.browser, (Opera)):
             return datetime((self.last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime')
         elif isinstance(self.browser, (Vivaldi)):
-            return datetime((self.last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime')
-        elif isinstance(self.browser, (Arc)):
             return datetime((self.last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime')
