@@ -17,6 +17,7 @@ BRAVE_DIR = Path(LOCAL_DATA, 'BraveSoftware', 'Brave-Browser', 'User Data', 'Def
 OPERA_DIR = Path(ROAMING, 'Opera Software', 'Opera Stable', 'Default', 'History')
 VIVALDI_DIR = Path(LOCAL_DATA, 'Vivaldi', 'User Data', 'Default', 'History')
 ARC_DIR = Path(LOCAL_DATA, 'Packages', 'TheBrowserCompany.Arc_ttt1ap7aakyb4', 'LocalCache', 'Local', 'Arc', 'User Data', 'Default', 'History')
+ZEN_DIR = Path(ROAMING, 'zen', 'Profiles')
 
 def get(browser_name):
     if browser_name == 'chrome':
@@ -33,6 +34,8 @@ def get(browser_name):
         return Vivaldi()
     elif browser_name == 'arc':
         return Arc()
+    elif browser_name == 'zen':
+        return Zen()
     else:
         raise ValueError('Invalid browser name')
 
@@ -174,6 +177,23 @@ class Arc(Base):
         """
         recents = self.query_history(self.database_path, 'SELECT url, title, last_visit_time FROM urls ORDER BY last_visit_time DESC', limit)
         return self.get_history_items(recents)
+    
+class Zen(Base):
+    """Zen Browser History"""
+
+    def __init__(self, database_path=ZEN_DIR):
+        # Zen database is not in a static location, so we need to find it
+        self.database_path = self.find_database(database_path)
+
+    def find_database(self, path):
+        """Find database in path"""
+        release_folder = Path(path).glob('*.Default (alpha)').__next__()
+        return Path(path, release_folder, 'places.sqlite')
+
+    def history(self, limit=10):
+        """Most recent Zen history"""
+        recents = self.query_history(self.database_path, 'SELECT url, title, visit_date FROM moz_places INNER JOIN moz_historyvisits on moz_historyvisits.place_id = moz_places.id ORDER BY visit_date DESC', limit)
+        return self.get_history_items(recents)
 
 class HistoryItem(object):
     """Representation of a history item"""
@@ -202,3 +222,5 @@ class HistoryItem(object):
             return datetime((self.last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime')
         elif isinstance(self.browser, (Vivaldi)):
             return datetime((self.last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime')
+        elif isinstance(self.browser, (Zen)):
+            return datetime.fromtimestamp(self.last_visit_time / 1000000.0)
