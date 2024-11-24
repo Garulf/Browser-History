@@ -1,5 +1,6 @@
-from flox import Flox, ICON_HISTORY, ICON_BROWSER
+from flox import Flox, ICON_HISTORY, ICON_BROWSER, ICON_FILE
 
+import pyperclip
 import browsers
 
 HISTORY_GLYPH = ''
@@ -53,6 +54,18 @@ class BrowserHistory(Flox):
             parameters=[data[1]],
 
         )
+        self.add_item(
+            title='Copy to clipboard',
+            subtitle=data[1],
+            icon=ICON_FILE,
+            method=self.copy_to_clipboard,
+            parameters=[data[1]],
+
+        )
+        
+    def copy_to_clipboard(self, data):
+        pyperclip.copy(data)
+        self.show_msg("Copied!", f"{data}")
 
 if __name__ == "__main__":
     BrowserHistory()
