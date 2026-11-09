@@ -2,13 +2,61 @@ body:
   - type: dropdown
     attributes:
       name: default_browser
-      label: Default Browser
-      defaultValue: Chrome
+      label: Browser Selection
+      defaultValue: All Browsers
+      description: Select 'All Browsers' to search every supported browser, a specific browser, or a 'Custom Profile'.
       options:
-        - Chrome
-        - Firefox
-        - Edge
-        - Brave
-        - Opera
-        - Vivaldi
+        - All Browsers
         - Arc
+        - Brave
+        - Brave Nightly
+        - Chrome
+        - Custom Profile
+        - Edge
+        - Firefox
+        - Floorp
+        - Helium
+        - Opera
+        - Thorium
+        - Vivaldi
+        - Waterfox
+        - Zen
+  - type: dropdown
+    attributes:
+      name: profile_search_mode
+      label: Profile Search Mode
+      defaultValue: Active Profile
+      description: Choose how the plugin handles multiple profiles within a browser.
+      options:
+        - Active Profile
+        - All Profiles
+  - type: textarea
+    attributes:
+      name: custom_profile_path
+      label: Custom Profile Directories
+      defaultValue: ""
+      description: Comma-separated list of custom profile paths. Required only if "Custom Profile" is selected, or if you want to include custom profiles with "All Browsers".
+  - type: input
+    attributes:
+      name: history_limit
+      label: History Limit
+      defaultValue: "1000"
+      description: Maximum number of recent history entries to retrieve per browser profile.
+  - type: input
+    attributes:
+      name: max_ui_results
+      label: UI Results Limit
+      defaultValue: "500"
+      description: Maximum number of final results to display in Flow Launcher.
+  - type: textarea
+    attributes:
+      name: blocked_domains
+      label: Blocked Domains
+      defaultValue: ""
+      description: Comma-separated list of domains to hide from search results (e.g., facebook.com, twitter.com).
+  - type: checkbox
+    attributes:
+      name: keep_history_cache
+      label: Keep History Cache
+      defaultValue: False
+      description: Keeps separate browser caches for each computer to speed up searches and reduce cloud sync usage when switching computers.

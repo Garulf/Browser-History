@@ -1,1 +1,2 @@
 flox-lib==0.10.4
+pyperclip==1.9.0

@@ -1,12 +1,12 @@
 {
-  "ID": "F6B8C1BC8441496798D2CE2BADB0E95E",
+  "ID": "2032fd77-87f3-47fa-91ab-a67982ba1253",
   "ActionKeyword": "bh",
-  "Name": "Browser History",
-  "Description": "Search your Web Browser history",
-  "Author": "Garulf",
-  "Version": "0.6.0",
+  "Name": "Browser History V2",
+  "Description": "Search your internet browsing history across multiple browsers",
+  "Author": "Fahim Ahmed",
+  "Version": "1.8.1",
   "Language": "python",
-  "Website": "https://github.com/Garulf/browser-history",
+  "Website": "https://github.com/fahim-ahmed05/browser-history-v2",
   "IcoPath": "./icon.png",
   "ExecuteFileName": "run.py"
 }
