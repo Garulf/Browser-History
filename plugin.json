@@ -4,7 +4,7 @@
   "Name": "Browser History V2",
   "Description": "Search your internet browsing history across multiple browsers",
   "Author": "Fahim Ahmed",
-  "Version": "1.8.0",
+  "Version": "1.8.1",
   "Language": "python",
   "Website": "https://github.com/fahim-ahmed05/browser-history-v2",
   "IcoPath": "./icon.png",
