@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import os
 import platform
-import shutil
 import sqlite3
 import time
 import hashlib
+import tempfile
 from pathlib import Path
 from datetime import datetime
 from typing import List, Optional
@@ -67,10 +67,13 @@ def _get_chromium_profiles(base: Path, db_file: str) -> List[Path]:
         and (p.name == "Default" or p.name.startswith("Profile "))
     ]
 
+
 def _get_firefox_profiles(base: Path, db_file: str) -> List[Path]:
     if not base.exists():
         return []
-    return [p / db_file for p in base.iterdir() if p.is_dir() and (p / db_file).exists()]
+    return [
+        p / db_file for p in base.iterdir() if p.is_dir() and (p / db_file).exists()
+    ]
 
 
 class Browser:
@@ -145,8 +148,8 @@ class Browser:
             else candidates[0]
         )
 
-    def _copy_database(self) -> str:
-        """Copy the locked original DB to a uniquely named cache file for safe reading."""
+    def _copy_database(self, force_refresh: bool = False) -> str:
+        """Create a consistent, atomically published cache copy of the source DB."""
         safe_name = self.name.replace(" ", "_")
         safe_pc = platform.node().replace(" ", "_")
 
@@ -155,9 +158,9 @@ class Browser:
         cache_name = f"bh_{safe_pc}_{safe_name}_{path_hash}_cache.sqlite"
         target = self.cache_dir / cache_name
 
-        # Check if we already have a cached copy that is up to date
+        # Check if we already have a cached copy that is up to date.
         try:
-            if target.exists():
+            if not force_refresh and target.exists():
                 source_mtime = self.database_path.stat().st_mtime
                 target_mtime = target.stat().st_mtime
                 if source_mtime <= target_mtime:
@@ -165,13 +168,48 @@ class Browser:
         except OSError:
             pass  # Fallback to copying if stat fails
 
+        temp_path = None
         last_err = None
         for attempt in range(3):
             try:
-                shutil.copy(self.database_path, target)
+                temp_fd, temp_name = tempfile.mkstemp(
+                    prefix=f".{target.name}.", suffix=".tmp", dir=self.cache_dir
+                )
+                os.close(temp_fd)
+                temp_path = Path(temp_name)
+
+                source_uri = f"{self.database_path.as_uri()}?mode=ro"
+                source_connection = None
+                destination_connection = None
+                try:
+                    source_connection = sqlite3.connect(source_uri, uri=True)
+                    destination_connection = sqlite3.connect(str(temp_path))
+                    source_connection.backup(destination_connection)
+                    destination_connection.commit()
+                    check = destination_connection.execute(
+                        "PRAGMA quick_check"
+                    ).fetchone()
+                    if not check or check[0] != "ok":
+                        raise sqlite3.DatabaseError(
+                            f"SQLite integrity check failed for '{self.database_path}'"
+                        )
+                finally:
+                    if source_connection:
+                        source_connection.close()
+                    if destination_connection:
+                        destination_connection.close()
+
+                os.replace(temp_path, target)
+                temp_path = None
                 break
-            except OSError as e:
+            except (OSError, sqlite3.Error) as e:
                 last_err = e
+                if temp_path:
+                    try:
+                        temp_path.unlink()
+                    except OSError:
+                        pass
+                    temp_path = None
                 time.sleep(0.05 * (attempt + 1))
         else:
             raise OSError(
@@ -181,17 +219,41 @@ class Browser:
         return str(target)
 
     def history(
-        self, search_term: str = "", limit: int = 100, blocked_domains: Optional[List[str]] = None
+        self,
+        search_term: str = "",
+        limit: int = 100,
+        blocked_domains: Optional[List[str]] = None,
     ) -> List["HistoryItem"]:
-        db_path = self._copy_database()
+        for cache_attempt in range(2):
+            db_path = self._copy_database(force_refresh=cache_attempt == 1)
+            try:
+                rows = self._read_history(db_path, search_term, limit, blocked_domains)
+                return [HistoryItem(self, *row) for row in rows]
+            except sqlite3.DatabaseError:
+                if cache_attempt == 1:
+                    raise
+                try:
+                    Path(db_path).unlink()
+                except OSError:
+                    pass
 
+        return []
+
+    def _read_history(
+        self,
+        db_path: str,
+        search_term: str,
+        limit: int,
+        blocked_domains: Optional[List[str]],
+    ):
         last_err = None
+        connection = None
         for attempt in range(3):
             try:
                 # Open strictly in read-only mode using a URI
                 connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
                 break
-            except OSError as e:
+            except (OSError, sqlite3.Error) as e:
                 last_err = e
                 time.sleep(0.03 * (attempt + 1))
         else:
@@ -211,7 +273,7 @@ class Browser:
                 for term in terms:
                     conditions.append("(title LIKE ? OR url LIKE ?)")
                     params.extend([f"%{term}%", f"%{term}%"])
-            
+
             if blocked_domains:
                 for domain in blocked_domains:
                     conditions.append("url NOT LIKE ?")
@@ -229,7 +291,7 @@ class Browser:
             rows = cursor.fetchall()
         finally:
             connection.close()
-        return [HistoryItem(self, *row) for row in rows]
+        return rows
 
     def convert_timestamp(self, raw_time):
         seconds = self.normalize_timestamp(raw_time)
