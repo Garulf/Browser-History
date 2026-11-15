@@ -1,0 +1,26 @@
+{
+  "keyword": "bh",
+  "query": "flow",
+  "icon": "../../data/icon.png",
+  "max_results": 3,
+  "selection": 0,
+  "results": [
+    {
+      "title": "Flow Launcher - Quick file search and app launcher for Windows",
+      "subtitle": "0. https://www.flowlauncher.com/",
+      "icon": "../../data/icon.png"
+    },
+    {
+      "title": "Plugins - Flow Launcher",
+      "subtitle": "4. https://www.flowlauncher.com/plugins/",
+      "icon": "../../data/icon.png"
+    },
+    {
+      "title": "Flow-Launcher/Flow.Launcher: Quick file search & app launcher",
+      "subtitle": "9. https://github.com/Flow-Launcher/Flow.Launcher",
+      "icon": "../../data/icon.png"
+    }
+  ],
+  "query_suggestion": "",
+  "show_caret": false
+}

@@ -1,0 +1,16 @@
+{
+  "keyword": "bh",
+  "query": "flow",
+  "icon": "../../data/icon.png",
+  "max_results": 1,
+  "selection": 0,
+  "results": [
+    {
+      "title": "Open in browser",
+      "subtitle": "Plugins - Flow Launcher",
+      "icon": "browser.svg"
+    }
+  ],
+  "query_suggestion": "",
+  "show_caret": false
+}
