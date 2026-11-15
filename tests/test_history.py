@@ -1,0 +1,88 @@
+import asyncio
+
+import history
+
+
+def run(method, *args):
+    return asyncio.run(history.plugin._event_handler.trigger_event(method, *args))
+
+
+def results(method, *args):
+    return run(method, *args)["Result"]
+
+
+def test_query_filters_by_title_or_url_newest_first(settings, chrome_history):
+    found = results("query", "o")
+    assert [r["Title"] for r in found] == [
+        "Flow Launcher on GitHub",
+        "Hacker News",
+        "https://example.com/untitled",
+        "sqlite3 - Python documentation",
+    ]
+    assert [r["Title"] for r in results("query", "GITHUB")] == ["Flow Launcher on GitHub"]
+
+
+def test_subtitle_numbers_the_full_history(settings, chrome_history):
+    (result,) = results("query", "python")
+    assert result["SubTitle"] == "3. https://docs.python.org/3/library/sqlite3.html"
+    assert result["Score"] == 0
+
+
+def test_result_opens_url_and_carries_context(settings, chrome_history):
+    (result,) = results("query", "hacker")
+    assert result["JsonRPCAction"] == {
+        "Method": "browser_open",
+        "Parameters": ["https://news.ycombinator.com/"],
+        "DontHideAfterAction": False,
+    }
+    assert result["ContextData"] == ["Hacker News", "https://news.ycombinator.com/"]
+    assert result["Glyph"] == history.HISTORY_GLYPH
+
+
+def test_empty_query_lists_everything(settings, chrome_history):
+    assert len(results("query", "")) == 4
+
+
+def test_default_browser_is_chrome(chrome_history):
+    history.plugin.launcher._settings = {}
+    assert len(results("query", "")) == 4
+
+
+def test_firefox_setting(settings, firefox_places):
+    settings["default_browser"] = "Firefox"
+    assert [r["Title"] for r in results("query", "mozilla")] == [
+        "Firefox",
+        "https://developer.mozilla.org/",
+        "Firefox",
+    ]
+
+
+def test_missing_history_shows_not_found(settings, environ):
+    settings["default_browser"] = "Edge"
+    (result,) = results("query", "")
+    assert result["Title"] == "History not found!"
+    assert result["JsonRPCAction"] is None
+
+
+def test_missing_firefox_profile_shows_not_found(settings, environ):
+    settings["default_browser"] = "Firefox"
+    assert results("query", "")[0]["Title"] == "History not found!"
+
+
+def test_context_menu_opens_in_browser():
+    (result,) = results("context_menu", ["Hacker News", "https://news.ycombinator.com/"])
+    assert result["Title"] == "Open in browser"
+    assert result["SubTitle"] == "Hacker News"
+    assert result["JsonRPCAction"]["Method"] == "browser_open"
+    assert result["JsonRPCAction"]["Parameters"] == ["https://news.ycombinator.com/"]
+
+
+def test_context_menu_without_data_is_empty():
+    assert results("context_menu", None) == []
+
+
+def test_browser_open_uses_default_browser(monkeypatch):
+    opened = []
+    monkeypatch.setattr(history.webbrowser, "open", opened.append)
+    run("browser_open", "https://example.com/")
+    assert opened == ["https://example.com/"]

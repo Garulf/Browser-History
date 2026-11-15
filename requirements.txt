@@ -1,1 +1,1 @@
-flox-lib==0.10.4
+pyflowlauncher[all]==1.2.2
