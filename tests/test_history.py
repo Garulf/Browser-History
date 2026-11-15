@@ -70,7 +70,7 @@ def test_missing_firefox_profile_shows_not_found(settings, environ):
 
 
 def test_context_menu_opens_in_browser():
-    (result,) = results("context_menu", ["Hacker News", "https://news.ycombinator.com/"])
+    result = results("context_menu", ["Hacker News", "https://news.ycombinator.com/"])[0]
     assert result["Title"] == "Open in browser"
     assert result["SubTitle"] == "Hacker News"
     assert result["JsonRPCAction"]["Method"] == "browser_open"
@@ -86,3 +86,16 @@ def test_browser_open_uses_default_browser(monkeypatch):
     monkeypatch.setattr(history.webbrowser, "open", opened.append)
     run("browser_open", "https://example.com/")
     assert opened == ["https://example.com/"]
+
+
+def test_context_menu_copies_url():
+    copy = results("context_menu", ["Hacker News", "https://news.ycombinator.com/"])[1]
+    assert copy["Title"] == "Copy URL"
+    assert copy["SubTitle"] == "https://news.ycombinator.com/"
+    assert copy["JsonRPCAction"]["Method"] == "Flow.Launcher.CopyToClipboard"
+    assert copy["JsonRPCAction"]["Parameters"][0] == "https://news.ycombinator.com/"
+
+
+def test_result_copy_text_is_the_url(settings, chrome_history):
+    (result,) = results("query", "hacker")
+    assert result["CopyText"] == "https://news.ycombinator.com/"

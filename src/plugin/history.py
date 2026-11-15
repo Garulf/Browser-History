@@ -34,6 +34,7 @@ def history_result(index: int, item: browsers.HistoryItem) -> Result:
         icon=icons.HISTORY,
         glyph=HISTORY_GLYPH,
         context_data=[item.title, item.url],
+        copy_text=item.url,
     ).add_action(browser_open, [item.url])
 
 
@@ -61,4 +62,7 @@ def context_menu(data: Optional[list]) -> List[Result]:
     if not data:
         return []
     title, url = data
-    return [Result(title="Open in browser", subtitle=title, icon=icons.BROWSER).add_action(browser_open, [url])]
+    return [
+        Result(title="Open in browser", subtitle=title, icon=icons.BROWSER).add_action(browser_open, [url]),
+        Result(title="Copy URL", subtitle=url, icon=icons.COPY).add_action(plugin.launcher.api.copy_to_clipboard(url)),
+    ]
