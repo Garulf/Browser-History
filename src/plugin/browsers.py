@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import configparser
 import os
 import shutil
 import sqlite3
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Mapping, Optional, Tuple
+from typing import Iterator, List, Mapping, Optional, Tuple
 
 CHROMIUM_QUERY = "SELECT url, title, last_visit_time FROM urls ORDER BY last_visit_time DESC"
 FIREFOX_QUERY = (
@@ -14,7 +15,7 @@ FIREFOX_QUERY = (
     "INNER JOIN moz_historyvisits on moz_historyvisits.place_id = moz_places.id "
     "ORDER BY visit_date DESC"
 )
-FIREFOX_PROFILE_GLOB = "*.default-release"
+FIREFOX_PROFILE_GLOB = "*.default-release*"
 
 CHROMIUM_HISTORY = {
     "chrome": ("LOCALAPPDATA", "Google", "Chrome", "User Data", "Default", "History"),
@@ -27,7 +28,7 @@ CHROMIUM_HISTORY = {
         "LocalCache", "Local", "Arc", "User Data", "Default", "History",
     ),
 }
-FIREFOX_PROFILES = ("APPDATA", "Mozilla", "Firefox", "Profiles")
+FIREFOX_DIR = ("APPDATA", "Mozilla", "Firefox")
 
 
 @dataclass(frozen=True)
@@ -70,11 +71,34 @@ def _path(parts: Tuple[str, ...], environ: Mapping[str, str]) -> Path:
     return Path(environ.get(root, ""), *rest)
 
 
-def find_firefox_database(profiles_dir: Path) -> Path:
-    profile = next(Path(profiles_dir).glob(FIREFOX_PROFILE_GLOB), None)
-    if profile is None:
-        raise FileNotFoundError(f"No {FIREFOX_PROFILE_GLOB} profile in {profiles_dir}")
-    return profile / "places.sqlite"
+def _read_profiles_ini(firefox_dir: Path) -> configparser.ConfigParser:
+    parser = configparser.ConfigParser(strict=False, interpolation=None)
+    try:
+        parser.read_string((firefox_dir / "profiles.ini").read_text(encoding="utf-8", errors="replace"))
+    except (OSError, configparser.Error):
+        pass
+    return parser
+
+
+def _candidate_profiles(firefox_dir: Path) -> Iterator[Path]:
+    """Profiles in the order Firefox picks them: the install default, the legacy default, then by name."""
+    parser = _read_profiles_ini(firefox_dir)
+    sections = [parser[name] for name in parser.sections()]
+    for section in sections:
+        if section.name.startswith("Install") and section.get("Default"):
+            yield firefox_dir / section["Default"]
+    for section in sections:
+        if section.name.startswith("Profile") and section.get("Default") == "1" and section.get("Path"):
+            yield firefox_dir / section["Path"]
+    yield from sorted((firefox_dir / "Profiles").glob(FIREFOX_PROFILE_GLOB))
+
+
+def find_firefox_database(firefox_dir: Path) -> Path:
+    for profile in _candidate_profiles(Path(firefox_dir)):
+        database = profile / "places.sqlite"
+        if database.is_file():
+            return database
+    raise FileNotFoundError(f"No Firefox profile with places.sqlite in {firefox_dir}")
 
 
 def get(browser_name: str, environ: Optional[Mapping[str, str]] = None) -> Browser:
@@ -82,6 +106,6 @@ def get(browser_name: str, environ: Optional[Mapping[str, str]] = None) -> Brows
     if browser_name in CHROMIUM_HISTORY:
         return Browser(browser_name, _path(CHROMIUM_HISTORY[browser_name], environ), CHROMIUM_QUERY)
     if browser_name == "firefox":
-        database = find_firefox_database(_path(FIREFOX_PROFILES, environ))
+        database = find_firefox_database(_path(FIREFOX_DIR, environ))
         return Browser(browser_name, database, FIREFOX_QUERY)
     raise ValueError("Invalid browser name")

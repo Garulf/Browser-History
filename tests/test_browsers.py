@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 import browsers
-from conftest import make_chromium_history
+from conftest import make_chromium_history, make_firefox_places
 
 
 def test_chromium_history_is_newest_first_and_limited(chrome_history):
@@ -81,3 +81,57 @@ def test_item_matches_title_or_url_ignoring_case(query):
     item = browsers.HistoryItem.from_row("https://news.ycombinator.com/", "Hacker News", 1)
     assert item.matches(query)
     assert not item.matches("lobsters")
+
+
+PROFILES_INI = """[Profile1]
+Name=default
+IsRelative=1
+Path=Profiles/abcd1234.default
+Default=1
+
+[Profile0]
+Name=work
+IsRelative=1
+Path=Profiles/qs116czo.Old Settings
+
+[Install308046B0AF4A39CB]
+Default=Profiles/qs116czo.Old Settings
+Locked=1
+
+[General]
+StartWithLastProfile=1
+Version=2
+"""
+
+
+def test_firefox_uses_install_default_from_profiles_ini(firefox_dir):
+    make_firefox_places(firefox_dir / "Profiles" / "abcd1234.default")
+    expected = make_firefox_places(firefox_dir / "Profiles" / "qs116czo.Old Settings")
+    (firefox_dir / "profiles.ini").write_text(PROFILES_INI, encoding="utf-8")
+    assert browsers.get("firefox").database_path == expected
+
+
+def test_firefox_falls_back_to_legacy_default_profile(firefox_dir):
+    expected = make_firefox_places(firefox_dir / "Profiles" / "abcd1234.default")
+    ini = PROFILES_INI.replace("Default=Profiles/qs116czo.Old Settings", "Default=Profiles/missing")
+    (firefox_dir / "profiles.ini").write_text(ini, encoding="utf-8")
+    assert browsers.get("firefox").database_path == expected
+
+
+def test_firefox_finds_suffixed_default_release_profile(firefox_dir):
+    expected = make_firefox_places(firefox_dir / "Profiles" / "5ci8zu0b.default-release-1681539393892")
+    assert browsers.get("firefox").database_path == expected
+
+
+def test_firefox_absolute_profile_path(firefox_dir, tmp_path):
+    expected = make_firefox_places(tmp_path / "Elsewhere" / "custom.profile")
+    firefox_dir.mkdir(parents=True)
+    (firefox_dir / "profiles.ini").write_text(
+        f"[Install1]\nDefault={expected.parent}\n", encoding="utf-8"
+    )
+    assert browsers.get("firefox").database_path == expected
+
+
+def test_unreadable_profiles_ini_is_ignored(firefox_places, firefox_dir):
+    (firefox_dir / "profiles.ini").write_bytes(b"\xff\xfe not an ini [")
+    assert browsers.get("firefox").database_path == firefox_places

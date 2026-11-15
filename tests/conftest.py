@@ -55,8 +55,13 @@ def chrome_history(environ):
 
 
 @pytest.fixture
+def firefox_dir(environ):
+    return browsers._path(browsers.FIREFOX_DIR, environ)
+
+
+@pytest.fixture
 def firefox_places(environ):
-    profiles = browsers._path(browsers.FIREFOX_PROFILES, environ)
+    profiles = browsers._path(browsers.FIREFOX_DIR, environ) / "Profiles"
     (profiles / "abcd1234.default").mkdir(parents=True)
     return make_firefox_places(profiles / "wxyz5678.default-release")
 
