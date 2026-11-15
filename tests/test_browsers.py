@@ -1,4 +1,5 @@
 import json
+import shutil
 import sqlite3
 from pathlib import Path
 
@@ -179,3 +180,15 @@ def test_history_includes_visits_not_yet_checkpointed_from_the_wal(firefox_dir):
         assert browsers.get("firefox").history(limit=1)[0].title == "Flow Launcher"
     finally:
         browser_connection.close()
+
+
+def test_history_survives_a_locked_temporary_copy(chrome_history, monkeypatch):
+    real_rmtree = shutil.rmtree
+
+    def rmtree(path, ignore_errors=False, *args, **kwargs):
+        if not ignore_errors:
+            raise PermissionError(32, "The process cannot access the file because it is being used by another process")
+        return real_rmtree(path, ignore_errors=True)
+
+    monkeypatch.setattr(shutil, "rmtree", rmtree)
+    assert len(browsers.get("chrome").history()) == 4

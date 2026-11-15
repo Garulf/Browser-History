@@ -55,7 +55,8 @@ class Browser:
 
     def history(self, limit: int = 10) -> List[HistoryItem]:
         """Most recent visits, newest first, read from a copy because the browser locks its database."""
-        with tempfile.TemporaryDirectory() as temp_dir:
+        temp_dir = tempfile.mkdtemp(prefix="browser-history-")
+        try:
             temp_path = shutil.copy(str(self.database_path), temp_dir)
             wal = self.database_path.with_name(self.database_path.name + "-wal")
             if wal.is_file():
@@ -65,6 +66,8 @@ class Browser:
                 rows = connection.execute(f"{self.query} LIMIT ?", (limit,)).fetchall()
             finally:
                 connection.close()
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
         return [HistoryItem.from_row(*row) for row in rows]
 
 
