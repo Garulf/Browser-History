@@ -57,6 +57,9 @@ class Browser:
         """Most recent visits, newest first, read from a copy because the browser locks its database."""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = shutil.copy(str(self.database_path), temp_dir)
+            wal = self.database_path.with_name(self.database_path.name + "-wal")
+            if wal.is_file():
+                shutil.copy(str(wal), temp_dir)
             connection = sqlite3.connect(temp_path)
             try:
                 rows = connection.execute(f"{self.query} LIMIT ?", (limit,)).fetchall()

@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -162,3 +163,19 @@ def test_chromium_falls_back_to_default_profile(chrome_history, chrome_user_data
     assert browsers.get("chrome").database_path == chrome_history
     (chrome_user_data / "Local State").write_text("{not json", encoding="utf-8")
     assert browsers.get("chrome").database_path == chrome_history
+
+
+def test_history_includes_visits_not_yet_checkpointed_from_the_wal(firefox_dir):
+    profile = firefox_dir / "Profiles" / "wxyz5678.default-release"
+    database = make_firefox_places(profile)
+    browser_connection = sqlite3.connect(str(database))
+    try:
+        browser_connection.execute("PRAGMA journal_mode=WAL")
+        browser_connection.execute("PRAGMA wal_autocheckpoint=0")
+        browser_connection.execute("INSERT INTO moz_places VALUES (3, 'https://www.flowlauncher.com/', 'Flow Launcher')")
+        browser_connection.execute("INSERT INTO moz_historyvisits (place_id, visit_date) VALUES (3, 1700001000000000)")
+        browser_connection.commit()
+        assert (profile / "places.sqlite-wal").stat().st_size > 0
+        assert browsers.get("firefox").history(limit=1)[0].title == "Flow Launcher"
+    finally:
+        browser_connection.close()
