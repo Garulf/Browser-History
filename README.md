@@ -14,7 +14,8 @@ Search your web browser history from Flow Launcher.
 * **Search by title or address.** `bh flow` finds every page with "flow" in its title or URL.
 * **Newest first.** Results follow your history, most recent visit at the top.
 * **Fully local.** Reads the browser's own history database. Nothing leaves your machine.
-* **Seven browsers.** Chrome, Edge, Brave, Opera, Vivaldi, Arc and Firefox.
+* **Copy the address.** `Ctrl+C` or the context menu copies a result's URL.
+* **Eight browsers.** Chrome, Edge, Brave, Opera, Vivaldi, Arc, Firefox and Waterfox.
 
 ## Usage
 
@@ -30,9 +31,9 @@ The number in front of each address is its position in your history, `0` being y
 
 ### Context menu
 
-Open the context menu (`Shift+Enter` or right-click) on a result to open it in your browser:
+Open the context menu (`Shift+Enter` or right-click) on a result to open it in your browser or copy its URL:
 
-![Open in browser in the context menu](.github/assets/context-light.png#gh-light-mode-only)![Open in browser in the context menu](.github/assets/context-dark.png#gh-dark-mode-only)
+![Open in browser and Copy URL in the context menu](.github/assets/context-light.png#gh-light-mode-only)![Open in browser and Copy URL in the context menu](.github/assets/context-dark.png#gh-dark-mode-only)
 
 ## Installation
 
@@ -60,10 +61,10 @@ Open **Settings → Plugins → Browser History** in Flow Launcher:
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| Default Browser | `Chrome` | The browser whose history is searched: Chrome, Firefox, Edge, Brave, Opera, Vivaldi or Arc |
+| Default Browser | `Chrome` | The browser whose history is searched: Chrome, Firefox, Edge, Brave, Opera, Vivaldi, Arc or Waterfox |
 
-Chromium based browsers are read from their `Default` profile. Firefox is read from the
-profile folder ending in `.default-release`.
+Chromium based browsers are read from the profile you last used, or `Default`. Firefox and
+Waterfox are read from the profile they start with, as set in their `profiles.ini`.
 
 ## Requirements
 
