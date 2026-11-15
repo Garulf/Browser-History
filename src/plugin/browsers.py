@@ -27,7 +27,10 @@ CHROMIUM_USER_DATA = {
     "arc": ("LOCALAPPDATA", "Packages", "TheBrowserCompany.Arc_ttt1ap7aakyb4", "LocalCache", "Local", "Arc", "User Data"),
 }
 CHROMIUM_DEFAULT_PROFILE = "Default"
-FIREFOX_DIR = ("APPDATA", "Mozilla", "Firefox")
+FIREFOX_USER_DATA = {
+    "firefox": ("APPDATA", "Mozilla", "Firefox"),
+    "waterfox": ("APPDATA", "Waterfox"),
+}
 
 
 @dataclass(frozen=True)
@@ -126,7 +129,7 @@ def get(browser_name: str, environ: Optional[Mapping[str, str]] = None) -> Brows
     if browser_name in CHROMIUM_USER_DATA:
         database = find_chromium_database(_path(CHROMIUM_USER_DATA[browser_name], environ))
         return Browser(browser_name, database, CHROMIUM_QUERY)
-    if browser_name == "firefox":
-        database = find_firefox_database(_path(FIREFOX_DIR, environ))
+    if browser_name in FIREFOX_USER_DATA:
+        database = find_firefox_database(_path(FIREFOX_USER_DATA[browser_name], environ))
         return Browser(browser_name, database, FIREFOX_QUERY)
     raise ValueError("Invalid browser name")

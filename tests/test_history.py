@@ -1,6 +1,9 @@
 import asyncio
+from pathlib import Path
 
+import browsers
 import history
+from conftest import make_firefox_places
 
 
 def run(method, *args):
@@ -99,3 +102,21 @@ def test_context_menu_copies_url():
 def test_result_copy_text_is_the_url(settings, chrome_history):
     (result,) = results("query", "hacker")
     assert result["CopyText"] == "https://news.ycombinator.com/"
+
+
+def test_waterfox_setting(settings, environ, tmp_path):
+    make_firefox_places(tmp_path / "Roaming" / "Waterfox" / "Profiles" / "k3j2.default-release")
+    settings["default_browser"] = "Waterfox"
+    assert [r["Title"] for r in results("query", "mozilla")] == [
+        "Firefox",
+        "https://developer.mozilla.org/",
+        "Firefox",
+    ]
+
+
+def test_settings_template_offers_every_browser():
+    template = (Path(__file__).parents[1] / "data" / "SettingsTemplate.yaml").read_text(encoding="utf-8")
+    options = [line.strip()[2:] for line in template.splitlines() if line.strip().startswith("- ") and "type:" not in line]
+    assert options == ["Chrome", "Firefox", "Edge", "Brave", "Opera", "Vivaldi", "Arc", "Waterfox"]
+    for option in options:
+        assert option.lower() in browsers.CHROMIUM_USER_DATA or option.lower() in browsers.FIREFOX_USER_DATA
