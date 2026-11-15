@@ -50,8 +50,13 @@ def environ(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def chrome_history(environ):
-    return make_chromium_history(browsers._path(browsers.CHROMIUM_HISTORY["chrome"], environ))
+def chrome_user_data(environ):
+    return browsers._path(browsers.CHROMIUM_USER_DATA["chrome"], environ)
+
+
+@pytest.fixture
+def chrome_history(chrome_user_data):
+    return make_chromium_history(chrome_user_data / "Default" / "History")
 
 
 @pytest.fixture

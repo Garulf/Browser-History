@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -135,3 +136,29 @@ def test_firefox_absolute_profile_path(firefox_dir, tmp_path):
 def test_unreadable_profiles_ini_is_ignored(firefox_places, firefox_dir):
     (firefox_dir / "profiles.ini").write_bytes(b"\xff\xfe not an ini [")
     assert browsers.get("firefox").database_path == firefox_places
+
+
+def write_local_state(user_data, last_used):
+    user_data.mkdir(parents=True, exist_ok=True)
+    (user_data / "Local State").write_text(json.dumps({"profile": {"last_used": last_used}}), encoding="utf-8")
+
+
+def test_chromium_uses_last_used_profile(chrome_user_data):
+    expected = make_chromium_history(chrome_user_data / "Profile 4" / "History", rows=[("https://example.org/", "p4", 1)])
+    write_local_state(chrome_user_data, "Profile 4")
+    browser = browsers.get("chrome")
+    assert browser.database_path == expected
+    assert [item.title for item in browser.history()] == ["p4"]
+
+
+def test_chromium_last_used_profile_wins_over_default(chrome_history, chrome_user_data):
+    expected = make_chromium_history(chrome_user_data / "Profile 1" / "History")
+    write_local_state(chrome_user_data, "Profile 1")
+    assert browsers.get("chrome").database_path == expected
+
+
+def test_chromium_falls_back_to_default_profile(chrome_history, chrome_user_data):
+    write_local_state(chrome_user_data, "Profile 9")
+    assert browsers.get("chrome").database_path == chrome_history
+    (chrome_user_data / "Local State").write_text("{not json", encoding="utf-8")
+    assert browsers.get("chrome").database_path == chrome_history

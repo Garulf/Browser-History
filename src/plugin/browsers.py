@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import configparser
+import json
 import os
 import shutil
 import sqlite3
@@ -17,17 +18,15 @@ FIREFOX_QUERY = (
 )
 FIREFOX_PROFILE_GLOB = "*.default-release*"
 
-CHROMIUM_HISTORY = {
-    "chrome": ("LOCALAPPDATA", "Google", "Chrome", "User Data", "Default", "History"),
-    "edge": ("LOCALAPPDATA", "Microsoft", "Edge", "User Data", "Default", "History"),
-    "brave": ("LOCALAPPDATA", "BraveSoftware", "Brave-Browser", "User Data", "Default", "History"),
-    "opera": ("APPDATA", "Opera Software", "Opera Stable", "Default", "History"),
-    "vivaldi": ("LOCALAPPDATA", "Vivaldi", "User Data", "Default", "History"),
-    "arc": (
-        "LOCALAPPDATA", "Packages", "TheBrowserCompany.Arc_ttt1ap7aakyb4",
-        "LocalCache", "Local", "Arc", "User Data", "Default", "History",
-    ),
+CHROMIUM_USER_DATA = {
+    "chrome": ("LOCALAPPDATA", "Google", "Chrome", "User Data"),
+    "edge": ("LOCALAPPDATA", "Microsoft", "Edge", "User Data"),
+    "brave": ("LOCALAPPDATA", "BraveSoftware", "Brave-Browser", "User Data"),
+    "opera": ("APPDATA", "Opera Software", "Opera Stable"),
+    "vivaldi": ("LOCALAPPDATA", "Vivaldi", "User Data"),
+    "arc": ("LOCALAPPDATA", "Packages", "TheBrowserCompany.Arc_ttt1ap7aakyb4", "LocalCache", "Local", "Arc", "User Data"),
 }
+CHROMIUM_DEFAULT_PROFILE = "Default"
 FIREFOX_DIR = ("APPDATA", "Mozilla", "Firefox")
 
 
@@ -71,6 +70,21 @@ def _path(parts: Tuple[str, ...], environ: Mapping[str, str]) -> Path:
     return Path(environ.get(root, ""), *rest)
 
 
+def _last_used_chromium_profile(user_data: Path) -> Optional[str]:
+    try:
+        local_state = json.loads((user_data / "Local State").read_text(encoding="utf-8"))
+        return local_state["profile"]["last_used"] or None
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def find_chromium_database(user_data: Path) -> Path:
+    for profile in (_last_used_chromium_profile(user_data), CHROMIUM_DEFAULT_PROFILE):
+        if profile and (user_data / profile / "History").is_file():
+            return user_data / profile / "History"
+    return user_data / CHROMIUM_DEFAULT_PROFILE / "History"
+
+
 def _read_profiles_ini(firefox_dir: Path) -> configparser.ConfigParser:
     parser = configparser.ConfigParser(strict=False, interpolation=None)
     try:
@@ -103,8 +117,9 @@ def find_firefox_database(firefox_dir: Path) -> Path:
 
 def get(browser_name: str, environ: Optional[Mapping[str, str]] = None) -> Browser:
     environ = os.environ if environ is None else environ
-    if browser_name in CHROMIUM_HISTORY:
-        return Browser(browser_name, _path(CHROMIUM_HISTORY[browser_name], environ), CHROMIUM_QUERY)
+    if browser_name in CHROMIUM_USER_DATA:
+        database = find_chromium_database(_path(CHROMIUM_USER_DATA[browser_name], environ))
+        return Browser(browser_name, database, CHROMIUM_QUERY)
     if browser_name == "firefox":
         database = find_firefox_database(_path(FIREFOX_DIR, environ))
         return Browser(browser_name, database, FIREFOX_QUERY)
